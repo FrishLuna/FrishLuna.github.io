@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>FrishLuna · 本机 QQ 的 OneBot 接口</title>
 <meta name="description" content="FrishLuna 是在原生 QQ 客户端旁边挂一层载荷，把消息收发和群管理变成 OneBot v11 接口的小工具。">
+<meta name="theme-color" content="#0d0f14">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%230e1016'/%3E%3Cpath d='M20 7a10 10 0 1 0 5 12A8 8 0 0 1 20 7z' fill='%23e8e6f0'/%3E%3C/svg%3E">
 <style>
   :root{
@@ -19,44 +20,74 @@
     --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
   }
   *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
   html,body{margin:0;padding:0}
   body{
     background:var(--bg);
     color:var(--text);
     font:16px/1.75 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
     -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
   }
   a{color:var(--accent);text-decoration:none}
-  a:hover{text-decoration:underline}
+  a:hover{text-decoration:none;color:#b3a8ff}
   .wrap{max-width:860px;margin:0 auto;padding:0 24px}
+
+  /* ---- 顶部滚动进度条 ---- */
+  #progress{
+    position:fixed;top:0;left:0;right:0;height:2px;z-index:999;
+    background:linear-gradient(90deg,var(--accent),var(--accent-2));
+    transform:scaleX(0);transform-origin:0 50%;
+    pointer-events:none;
+  }
+
+  /* ---- 左侧导航点 ---- */
+  #dots{
+    position:fixed;left:16px;top:50%;transform:translateY(-50%);z-index:900;
+    display:flex;flex-direction:column;gap:10px;
+  }
+  #dots a{
+    width:8px;height:8px;border-radius:3px;background:#ffffff1f;display:block;
+    transition:background .2s,transform .2s,width .2s;
+  }
+  #dots a:hover{background:var(--accent);transform:scale(1.25)}
+  #dots a.on{background:var(--accent);width:20px}
+  @media(max-width:820px){#dots{display:none}}
 
   header{
     border-bottom:1px solid var(--line);
     background:
       radial-gradient(700px 200px at 50% -80px, rgba(157,140,255,.18), transparent 70%),
       var(--bg);
+    position:relative;
   }
   .bar{display:flex;align-items:center;justify-content:space-between;padding:18px 0}
   .brand{display:flex;align-items:center;gap:10px;font-weight:600;letter-spacing:.02em}
   .brand svg{display:block}
   .bar nav{display:flex;gap:18px;font-size:14px}
   .bar nav a{color:var(--dim)}
-  .bar nav a:hover{color:var(--text);text-decoration:none}
+  .bar nav a:hover{color:var(--text)}
 
   .hero{padding:56px 0 64px}
+  #hero-glow{
+    position:absolute;inset:-120px 0 auto 0;height:420px;pointer-events:none;
+    background:radial-gradient(560px 260px at 70% 0%, rgba(110,231,200,.10), transparent 65%);
+    will-change:transform;
+  }
   .hero h1{
     font-size:40px;line-height:1.25;margin:0 0 18px;font-weight:650;letter-spacing:-.01em;
   }
   .hero p{color:var(--dim);font-size:17px;max-width:620px;margin:0 0 12px}
   .hero p:last-of-type{margin-bottom:32px}
-  .hero .sub{font-size:15px}
+  .hero .sub{font-size:15px;font-family:var(--mono);letter-spacing:.03em}
   .btns{display:flex;flex-wrap:wrap;gap:12px}
   .btn{
     display:inline-flex;align-items:center;gap:8px;
     padding:10px 18px;border-radius:8px;border:1px solid var(--line);
     background:var(--panel);color:var(--text);font-size:14px;
+    transition:transform .2s,border-color .2s,background .2s;
   }
-  .btn:hover{border-color:#39425a;text-decoration:none}
+  .btn:hover{border-color:#39425a;transform:translateY(-2px)}
   .btn.primary{background:var(--accent);border-color:var(--accent);color:#12101f;font-weight:600}
   .btn.primary:hover{background:#ad9fff}
   .btn small{color:inherit;opacity:.6;font-family:var(--mono)}
@@ -64,12 +95,20 @@
   section{padding:52px 0;border-top:1px solid var(--line)}
   h2{font-size:20px;margin:0 0 8px;font-weight:600;letter-spacing:.01em}
   .lead{color:var(--dim);margin:0 0 28px;font-size:15px}
+  .kicker{
+    display:inline-flex;align-items:center;gap:9px;
+    font:600 12px/1 var(--mono);letter-spacing:2px;
+    color:var(--accent);margin-bottom:14px;
+  }
+  .kicker i{width:16px;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent-2));border-radius:2px}
 
   .grid{display:grid;gap:14px}
   @media(min-width:720px){.grid.two{grid-template-columns:1fr 1fr}}
   .card{
     background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px 20px 18px;
+    transition:transform .25s,border-color .25s;
   }
+  .card:hover{transform:translateY(-3px);border-color:#39425a}
   .card h3{margin:0 0 6px;font-size:15px;font-weight:600}
   .card p{margin:0;color:var(--dim);font-size:14px;line-height:1.7}
   .card code{font-family:var(--mono);font-size:12.5px;color:var(--accent-2)}
@@ -112,9 +151,35 @@
   footer{border-top:1px solid var(--line);padding:30px 0 50px;color:#6f788c;font-size:13.5px}
   footer .row{display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between}
   footer a{color:#8d96ab}
+
+  /* ---- 进入视口的 reveal（只用 transform/opacity） ---- */
+  [data-reveal]{
+    opacity:0;transform:translateY(22px);
+    transition:opacity .6s ease,transform .6s cubic-bezier(.2,.7,.2,1);
+  }
+  [data-reveal="left"]{transform:translateX(-26px)}
+  [data-reveal="zoom"]{transform:scale(.94)}
+  [data-reveal="fade"]{transform:none}
+  [data-reveal].in{opacity:1;transform:none}
+
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto}
+    [data-reveal]{opacity:1;transform:none;transition:none}
+    .card,.btn{transition:none}
+    #progress,#hero-glow{display:none}
+  }
 </style>
 </head>
 <body>
+
+<div id="progress"></div>
+
+<nav id="dots" aria-label="章节导航">
+  <a href="#what" title="做什么"></a>
+  <a href="#how" title="怎么跑"></a>
+  <a href="#limits" title="边界"></a>
+  <a href="#notice" title="声明"></a>
+</nav>
 
 <header>
   <div class="wrap bar">
@@ -135,10 +200,11 @@
 </header>
 
 <div class="wrap hero">
-  <h1>在本机 QQ 旁边挂一层，<br>把它变成 OneBot v11 接口。</h1>
-  <p>FrishLuna 不替换客户端，也不改安装目录。你正常启动登录 QQ，注入器把一小段载荷挂进 QQ 进程，之后消息收发、群管理、空间和群相册都能从本机面板或 OneBot 接口调用。</p>
-  <p class="sub">Windows + QQNT · 零 npm 运行时依赖 · MIT</p>
-  <div class="btns">
+  <div id="hero-glow"></div>
+  <h1 data-reveal>在本机 QQ 旁边挂一层，<br>把它变成 OneBot v11 接口。</h1>
+  <p data-reveal data-delay="90">FrishLuna 不替换客户端，也不改安装目录。你正常启动登录 QQ，注入器把一小段载荷挂进 QQ 进程，之后消息收发、群管理、空间和群相册都能从本机面板或 OneBot 接口调用。</p>
+  <p class="sub" data-reveal data-delay="160">Windows + QQNT · 零 npm 运行时依赖 · MIT</p>
+  <div class="btns" data-reveal data-delay="240">
     <a class="btn primary" href="https://github.com/FrishLuna/FrishLuna">源码 <small>GitHub</small></a>
     <a class="btn" href="https://github.com/FrishLuna/FrishLuna#readme">README</a>
     <a class="btn" href="https://github.com/FrishLuna/FrishLuna/blob/main/docs/EULA.md">使用须知</a>
@@ -147,22 +213,23 @@
 
 <section id="what">
   <div class="wrap">
-    <h2>它做什么</h2>
-    <p class="lead">同一套能力有两张皮：本机面板给人点，OneBot 接口给机器人框架调。</p>
+    <div class="kicker" data-reveal><i></i>01 · 能力</div>
+    <h2 data-reveal data-delay="60">它做什么</h2>
+    <p class="lead" data-reveal data-delay="120">同一套能力有两张皮：本机面板给人点，OneBot 接口给机器人框架调。</p>
     <div class="grid two">
-      <div class="card">
+      <div class="card" data-reveal data-delay="0">
         <h3>收发消息</h3>
         <p>文本、图片、语音、视频、文件、表情回应、引用、合并转发、闪照。收方向会推事件，发方向按 seq 配对回执。</p>
       </div>
-      <div class="card">
+      <div class="card" data-reveal data-delay="90">
         <h3>群与好友</h3>
         <p>禁言、踢人、设管理、改名片、改群名、发公告、处理入群与好友申请、群文件上传与下载。</p>
       </div>
-      <div class="card">
+      <div class="card" data-reveal data-delay="180">
         <h3>空间与相册</h3>
         <p>发说说、看说说、删说说；群相册建相册、上传图片和视频（视频封面走本机 ffmpeg）。</p>
       </div>
-      <div class="card">
+      <div class="card" data-reveal="zoom" data-delay="270">
         <h3>OneBot v11</h3>
         <p>内置协议端，HTTP action、正向 WS、反向 WS 三种接法都支持，可以直接接 AstrBot 一类框架。</p>
       </div>
@@ -172,36 +239,39 @@
 
 <section id="how">
   <div class="wrap">
-    <h2>怎么跑起来</h2>
-    <p class="lead">全过程在本机，面板只监听 127.0.0.1。</p>
+    <div class="kicker" data-reveal><i></i>02 · 步骤</div>
+    <h2 data-reveal data-delay="60">怎么跑起来</h2>
+    <p class="lead" data-reveal data-delay="120">全过程在本机，面板只监听 127.0.0.1。</p>
     <ol class="steps">
-      <li><b>正常启动并登录 QQ。</b>客户端本体、界面、聊天都照常用，不用改任何安装文件。</li>
-      <li><b>启动面板。</b>双击 <code>app\启动 FrishLuna.vbs</code>，浏览器会自动打开 127.0.0.1:5701，首次运行会打印一个初始访问令牌。</li>
-      <li><b>挂上载荷。</b>面板发现 QQ 在跑但没挂载荷时自动注入；也可以走设置页手动触发。</li>
-      <li><b>接你的框架。</b>在面板里填 OneBot 令牌，或者反过来把本端连到你框架的反向 WS 地址。</li>
+      <li data-reveal="left" data-delay="0"><b>正常启动并登录 QQ。</b>客户端本体、界面、聊天都照常用，不用改任何安装文件。</li>
+      <li data-reveal="left" data-delay="90"><b>启动面板。</b>双击 <code>app\启动 FrishLuna.vbs</code>，浏览器会自动打开 127.0.0.1:5701，首次运行会打印一个初始访问令牌。</li>
+      <li data-reveal="left" data-delay="180"><b>挂上载荷。</b>面板发现 QQ 在跑但没挂载荷时自动注入；也可以走设置页手动触发。</li>
+      <li data-reveal="left" data-delay="270"><b>接你的框架。</b>在面板里填 OneBot 令牌，或者反过来把本端连到你框架的反向 WS 地址。</li>
     </ol>
   </div>
 </section>
 
 <section id="limits">
   <div class="wrap">
-    <h2>边界</h2>
-    <p class="lead">能用的就这些，其余别指望。QQ 一升级，接口行为可能立刻变。</p>
+    <div class="kicker" data-reveal><i></i>03 · 边界</div>
+    <h2 data-reveal data-delay="60">边界</h2>
+    <p class="lead" data-reveal data-delay="120">能用的就这些，其余别指望。QQ 一升级，接口行为可能立刻变。</p>
     <ul class="plain">
-      <li><b>只支持 Windows。</b>注入器和载荷都依赖 Windows 的进程机制。</li>
-      <li><b>跟着 QQ 版本走。</b>载荷按版本定位函数，客户端大版本更新后可能要重新适配。</li>
-      <li><b>本号自己发的消息没有回显。</b>QQ 只推收到的消息，所以外部框架不会响应本号发出去的内容。</li>
-      <li><b>写操作验证得少。</b>只读调用跑过大量循环，写操作出问题不奇怪，别在重要群上直接试。</li>
-      <li><b>不做自动化营销那套。</b>批量加好友、抢红包、刷量这类功能没有实现，以后也不加。</li>
+      <li data-reveal data-delay="0"><b>只支持 Windows。</b>注入器和载荷都依赖 Windows 的进程机制。</li>
+      <li data-reveal data-delay="70"><b>跟着 QQ 版本走。</b>载荷按版本定位函数，客户端大版本更新后可能要重新适配。</li>
+      <li data-reveal data-delay="140"><b>本号自己发的消息没有回显。</b>QQ 只推收到的消息，所以外部框架不会响应本号发出去的内容。</li>
+      <li data-reveal data-delay="210"><b>写操作验证得少。</b>只读调用跑过大量循环，写操作出问题不奇怪，别在重要群上直接试。</li>
+      <li data-reveal data-delay="280"><b>不做自动化营销那套。</b>批量加好友、抢红包、刷量这类功能没有实现，以后也不加。</li>
     </ul>
   </div>
 </section>
 
 <section id="notice">
   <div class="wrap">
-    <h2>先说清楚</h2>
-    <p class="lead">这段比上面所有内容都重要。</p>
-    <div class="note">
+    <div class="kicker" data-reveal><i></i>04 · 声明</div>
+    <h2 data-reveal data-delay="60">先说清楚</h2>
+    <p class="lead" data-reveal data-delay="120">这段比上面所有内容都重要。</p>
+    <div class="note" data-reveal="zoom">
       <p><b>和腾讯没有任何关系。</b>没有隶属、合作、授权，也没有背书。「QQ」「QQNT」只用来描述兼容对象。</p>
       <p><b>要稳定就用官方机器人。</b><a href="https://q.qq.com/">QQ 机器人开放平台</a> 和 <a href="https://bot.qq.com/">官方文档</a> 就在那儿：审核上线、接口稳定、账号不受影响。本项目是官方渠道之外的实验性研究。</p>
       <p><b>封号风险自己扛。</b>用这个可能被警告、限制功能、封号，也可能丢本地数据。作者不负责，也不帮解封。</p>
@@ -216,6 +286,62 @@
     <div><a href="https://github.com/FrishLuna">GitHub</a> · <a href="https://github.com/FrishLuna/FrishLuna/issues">问题反馈</a></div>
   </div>
 </footer>
+
+<script>
+(function(){
+  var rm = matchMedia('(prefers-reduced-motion: reduce)').matches
+
+  /* 进入视口就播：12% 触发一次，之后不再重复 */
+  var io = new IntersectionObserver(function(es){
+    es.forEach(function(e){
+      if (e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target) }
+    })
+  }, { threshold: .12 })
+  document.querySelectorAll('[data-reveal]').forEach(function(el){
+    if (rm){ el.classList.add('in'); return }
+    var d = el.getAttribute('data-delay')
+    if (d) el.style.transitionDelay = d + 'ms'
+    io.observe(el)
+  })
+
+  /* 一个 rAF + passive scroll：进度条 / 首屏视差 / 导航点 */
+  var bar = document.getElementById('progress')
+  var glow = document.getElementById('hero-glow')
+  var hero = document.querySelector('.hero h1')
+  var heroP = document.querySelector('.hero p')
+  var dots = document.querySelectorAll('#dots a')
+  var secs = ['what','how','limits','notice'].map(function(id){ return document.getElementById(id) })
+  var ticking = false
+
+  function frame(){
+    ticking = false
+    var h = document.documentElement
+    var max = h.scrollHeight - h.clientHeight
+    var p = max > 0 ? h.scrollTop / max : 0
+    bar.style.transform = 'scaleX(' + p + ')'
+
+    var y = window.scrollY
+    if (!rm && y < 900){
+      glow.style.transform = 'translateY(' + y * .3 + 'px)'
+      hero.style.transform = 'translateY(' + y * .14 + 'px)'
+      hero.style.opacity = 1 - Math.min(y / 640, .55)
+      heroP.style.transform = 'translateY(' + y * .1 + 'px)'
+    }
+
+    var cur = 0
+    secs.forEach(function(s, i){
+      if (s && s.getBoundingClientRect().top < innerHeight * .45) cur = i
+    })
+    dots.forEach(function(d, i){ d.classList.toggle('on', i === cur) })
+  }
+  addEventListener('scroll', function(){
+    if (ticking) return
+    ticking = true
+    requestAnimationFrame(frame)
+  }, { passive: true })
+  frame()
+})()
+</script>
 
 </body>
 </html>
