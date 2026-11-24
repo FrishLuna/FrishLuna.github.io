@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FrishLuna · 本机 QQ 的 OneBot 接口</title>
+<meta name="description" content="FrishLuna 是在原生 QQ 客户端旁边挂一层载荷，把消息收发和群管理变成 OneBot v11 接口的小工具。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%230e1016'/%3E%3Cpath d='M20 7a10 10 0 1 0 5 12A8 8 0 0 1 20 7z' fill='%23e8e6f0'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --bg:#0d0f14;
+    --panel:#131722;
+    --panel-2:#171c28;
+    --line:#242b3a;
+    --text:#e6e8ef;
+    --dim:#96a0b5;
+    --accent:#9d8cff;
+    --accent-2:#6ee7c8;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font:16px/1.75 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:860px;margin:0 auto;padding:0 24px}
+
+  header{
+    border-bottom:1px solid var(--line);
+    background:
+      radial-gradient(700px 200px at 50% -80px, rgba(157,140,255,.18), transparent 70%),
+      var(--bg);
+  }
+  .bar{display:flex;align-items:center;justify-content:space-between;padding:18px 0}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:600;letter-spacing:.02em}
+  .brand svg{display:block}
+  .bar nav{display:flex;gap:18px;font-size:14px}
+  .bar nav a{color:var(--dim)}
+  .bar nav a:hover{color:var(--text);text-decoration:none}
+
+  .hero{padding:56px 0 64px}
+  .hero h1{
+    font-size:40px;line-height:1.25;margin:0 0 18px;font-weight:650;letter-spacing:-.01em;
+  }
+  .hero p{color:var(--dim);font-size:17px;max-width:620px;margin:0 0 12px}
+  .hero p:last-of-type{margin-bottom:32px}
+  .hero .sub{font-size:15px}
+  .btns{display:flex;flex-wrap:wrap;gap:12px}
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:10px 18px;border-radius:8px;border:1px solid var(--line);
+    background:var(--panel);color:var(--text);font-size:14px;
+  }
+  .btn:hover{border-color:#39425a;text-decoration:none}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#12101f;font-weight:600}
+  .btn.primary:hover{background:#ad9fff}
+  .btn small{color:inherit;opacity:.6;font-family:var(--mono)}
+
+  section{padding:52px 0;border-top:1px solid var(--line)}
+  h2{font-size:20px;margin:0 0 8px;font-weight:600;letter-spacing:.01em}
+  .lead{color:var(--dim);margin:0 0 28px;font-size:15px}
+
+  .grid{display:grid;gap:14px}
+  @media(min-width:720px){.grid.two{grid-template-columns:1fr 1fr}}
+  .card{
+    background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px 20px 18px;
+  }
+  .card h3{margin:0 0 6px;font-size:15px;font-weight:600}
+  .card p{margin:0;color:var(--dim);font-size:14px;line-height:1.7}
+  .card code{font-family:var(--mono);font-size:12.5px;color:var(--accent-2)}
+
+  ol.steps{list-style:none;counter-reset:s;margin:0;padding:0}
+  ol.steps li{
+    counter-increment:s;position:relative;padding:0 0 22px 44px;color:var(--dim);font-size:15px;
+  }
+  ol.steps li:last-child{padding-bottom:0}
+  ol.steps li::before{
+    content:counter(s);
+    position:absolute;left:0;top:2px;width:26px;height:26px;border-radius:50%;
+    border:1px solid var(--line);background:var(--panel-2);
+    display:flex;align-items:center;justify-content:center;
+    font:600 12px/1 var(--mono);color:var(--accent);
+  }
+  ol.steps b{color:var(--text);font-weight:600}
+
+  ul.plain{margin:0;padding:0;list-style:none}
+  ul.plain li{padding:9px 0;border-bottom:1px dashed var(--line);color:var(--dim);font-size:15px}
+  ul.plain li:last-child{border-bottom:0}
+  ul.plain b{color:var(--text);font-weight:600}
+
+  pre{
+    background:var(--panel-2);border:1px solid var(--line);border-radius:10px;
+    padding:16px 18px;overflow:auto;font-family:var(--mono);font-size:13px;line-height:1.85;color:#cfd6e6;
+  }
+  pre .c{color:#6b768e}
+  code{font-family:var(--mono);font-size:.92em}
+
+  .note{
+    background:linear-gradient(180deg, rgba(157,140,255,.07), transparent);
+    border:1px solid var(--line);border-left:3px solid var(--accent);
+    border-radius:8px;padding:18px 20px;font-size:14.5px;color:var(--dim);
+  }
+  .note b{color:var(--text)}
+  .note p{margin:0 0 10px}
+  .note p:last-child{margin:0}
+
+  footer{border-top:1px solid var(--line);padding:30px 0 50px;color:#6f788c;font-size:13.5px}
+  footer .row{display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between}
+  footer a{color:#8d96ab}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap bar">
+    <div class="brand">
+      <svg width="22" height="22" viewBox="0 0 32 32" aria-hidden="true">
+        <circle cx="16" cy="16" r="15" fill="#141824" stroke="#2b3346"/>
+        <path d="M20.5 7a10 10 0 1 0 4.8 12.4A8 8 0 0 1 20.5 7z" fill="#cfc6ff"/>
+      </svg>
+      LunaFish
+    </div>
+    <nav>
+      <a href="#what">做什么</a>
+      <a href="#how">怎么跑</a>
+      <a href="#limits">边界</a>
+      <a href="#notice">声明</a>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap hero">
+  <h1>在本机 QQ 旁边挂一层，<br>把它变成 OneBot v11 接口。</h1>
+  <p>FrishLuna 不替换客户端，也不改安装目录。你正常启动登录 QQ，注入器把一小段载荷挂进 QQ 进程，之后消息收发、群管理、空间和群相册都能从本机面板或 OneBot 接口调用。</p>
+  <p class="sub">Windows + QQNT · 零 npm 运行时依赖 · MIT</p>
+  <div class="btns">
+    <a class="btn primary" href="https://github.com/FrishLuna/FrishLuna">源码 <small>GitHub</small></a>
+    <a class="btn" href="https://github.com/FrishLuna/FrishLuna#readme">README</a>
+    <a class="btn" href="https://github.com/FrishLuna/FrishLuna/blob/main/docs/EULA.md">使用须知</a>
+  </div>
+</div>
+
+<section id="what">
+  <div class="wrap">
+    <h2>它做什么</h2>
+    <p class="lead">同一套能力有两张皮：本机面板给人点，OneBot 接口给机器人框架调。</p>
+    <div class="grid two">
+      <div class="card">
+        <h3>收发消息</h3>
+        <p>文本、图片、语音、视频、文件、表情回应、引用、合并转发、闪照。收方向会推事件，发方向按 seq 配对回执。</p>
+      </div>
+      <div class="card">
+        <h3>群与好友</h3>
+        <p>禁言、踢人、设管理、改名片、改群名、发公告、处理入群与好友申请、群文件上传与下载。</p>
+      </div>
+      <div class="card">
+        <h3>空间与相册</h3>
+        <p>发说说、看说说、删说说；群相册建相册、上传图片和视频（视频封面走本机 ffmpeg）。</p>
+      </div>
+      <div class="card">
+        <h3>OneBot v11</h3>
+        <p>内置协议端，HTTP action、正向 WS、反向 WS 三种接法都支持，可以直接接 AstrBot 一类框架。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="wrap">
+    <h2>怎么跑起来</h2>
+    <p class="lead">全过程在本机，面板只监听 127.0.0.1。</p>
+    <ol class="steps">
+      <li><b>正常启动并登录 QQ。</b>客户端本体、界面、聊天都照常用，不用改任何安装文件。</li>
+      <li><b>启动面板。</b>双击 <code>app\启动 FrishLuna.vbs</code>，浏览器会自动打开 127.0.0.1:5701，首次运行会打印一个初始访问令牌。</li>
+      <li><b>挂上载荷。</b>面板发现 QQ 在跑但没挂载荷时自动注入；也可以走设置页手动触发。</li>
+      <li><b>接你的框架。</b>在面板里填 OneBot 令牌，或者反过来把本端连到你框架的反向 WS 地址。</li>
+    </ol>
+  </div>
+</section>
+
+<section id="limits">
+  <div class="wrap">
+    <h2>边界</h2>
+    <p class="lead">能用的就这些，其余别指望。QQ 一升级，接口行为可能立刻变。</p>
+    <ul class="plain">
+      <li><b>只支持 Windows。</b>注入器和载荷都依赖 Windows 的进程机制。</li>
+      <li><b>跟着 QQ 版本走。</b>载荷按版本定位函数，客户端大版本更新后可能要重新适配。</li>
+      <li><b>本号自己发的消息没有回显。</b>QQ 只推收到的消息，所以外部框架不会响应本号发出去的内容。</li>
+      <li><b>写操作验证得少。</b>只读调用跑过大量循环，写操作出问题不奇怪，别在重要群上直接试。</li>
+      <li><b>不做自动化营销那套。</b>批量加好友、抢红包、刷量这类功能没有实现，以后也不加。</li>
+    </ul>
+  </div>
+</section>
+
+<section id="notice">
+  <div class="wrap">
+    <h2>先说清楚</h2>
+    <p class="lead">这段比上面所有内容都重要。</p>
+    <div class="note">
+      <p><b>和腾讯没有任何关系。</b>没有隶属、合作、授权，也没有背书。「QQ」「QQNT」只用来描述兼容对象。</p>
+      <p><b>要稳定就用官方机器人。</b><a href="https://q.qq.com/">QQ 机器人开放平台</a> 和 <a href="https://bot.qq.com/">官方文档</a> 就在那儿：审核上线、接口稳定、账号不受影响。本项目是官方渠道之外的实验性研究。</p>
+      <p><b>封号风险自己扛。</b>用这个可能被警告、限制功能、封号，也可能丢本地数据。作者不负责，也不帮解封。</p>
+      <p><b>别拿去做违法的事。</b>群发营销、刷量、骚扰、欺诈、抓别人数据，一律不行。</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap row">
+    <div>© 2026 LunaFish · 代码以 <a href="https://github.com/FrishLuna/FrishLuna/blob/main/LICENSE">MIT</a> 许可发布</div>
+    <div><a href="https://github.com/FrishLuna">GitHub</a> · <a href="https://github.com/FrishLuna/FrishLuna/issues">问题反馈</a></div>
+  </div>
+</footer>
+
+</body>
+</html>
