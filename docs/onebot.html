@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OneBot 接入 · FrishLuna</title>
+<meta name="description" content="FrishLuna 内置 OneBot v11 协议端：HTTP / 正向 WS / 反向 WS 三种接法、令牌配置、调用示例与事件说明。">
+<meta name="theme-color" content="#0d0f14">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%230e1016'/%3E%3Cpath d='M20 7a10 10 0 1 0 5 12A8 8 0 0 1 20 7z' fill='%23e8e6f0'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --bg:#0d0f14; --panel:#131722; --panel-2:#171c28; --line:#242b3a;
+    --text:#e6e8ef; --dim:#96a0b5; --accent:#9d8cff; --accent-2:#6ee7c8;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);
+    font:16px/1.75 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    -webkit-font-smoothing:antialiased;overflow-x:hidden}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{color:#b3a8ff}
+  .wrap{max-width:860px;margin:0 auto;padding:0 24px}
+  #progress{position:fixed;top:0;left:0;right:0;height:2px;z-index:999;
+    background:linear-gradient(90deg,var(--accent),var(--accent-2));
+    transform:scaleX(0);transform-origin:0 50%;pointer-events:none}
+  header{border-bottom:1px solid var(--line);
+    background:radial-gradient(700px 200px at 50% -80px, rgba(157,140,255,.18), transparent 70%),var(--bg)}
+  .bar{display:flex;align-items:center;justify-content:space-between;padding:18px 0}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:600;letter-spacing:.02em;color:var(--text)}
+  .brand svg{display:block}
+  .bar nav{display:flex;gap:16px;font-size:14px;flex-wrap:wrap}
+  .bar nav a{color:var(--dim)}
+  .bar nav a:hover{color:var(--text)}
+  .bar nav a.on{color:var(--text);border-bottom:2px solid var(--accent);padding-bottom:2px}
+  .hero{padding:48px 0 56px}
+  .hero h1{font-size:34px;line-height:1.3;margin:0 0 14px;font-weight:650;letter-spacing:-.01em}
+  .hero p{color:var(--dim);font-size:16px;max-width:640px;margin:0}
+  .kicker{display:inline-flex;align-items:center;gap:9px;font:600 12px/1 var(--mono);
+    letter-spacing:2px;color:var(--accent);margin-bottom:14px}
+  .kicker i{width:16px;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent-2));border-radius:2px}
+  section{padding:44px 0}
+  h2{font-size:19px;margin:0 0 8px;font-weight:600}
+  .lead{color:var(--dim);margin:0 0 24px;font-size:15px}
+  h3{font-size:15.5px;margin:30px 0 8px;font-weight:600}
+  p{color:var(--dim);font-size:15px}
+  table{border-collapse:collapse;width:100%;font-size:14px}
+  th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}
+  th{background:var(--panel-2);color:var(--text);font-weight:600}
+  td{color:var(--dim)}
+  td code,p code,li code{font-family:var(--mono);font-size:12.5px;color:var(--accent-2);
+    background:#0a1118;border:1px solid var(--line);border-radius:5px;padding:1px 6px}
+  pre{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;
+    padding:14px 16px;overflow:auto;font-family:var(--mono);font-size:12.5px;line-height:1.8;color:#cfd6e6}
+  pre code{background:none;border:0;padding:0;color:inherit}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px 20px 16px;
+    transition:transform .25s,border-color .25s}
+  .card:hover{transform:translateY(-3px);border-color:#39425a}
+  .card h3{margin:0 0 6px;font-size:15px}
+  .card p{margin:0;font-size:14px;line-height:1.7}
+  .grid{display:grid;gap:14px}
+  @media(min-width:720px){.grid.two{grid-template-columns:1fr 1fr}}
+  ol.steps{list-style:none;counter-reset:s;margin:0;padding:0}
+  ol.steps li{counter-increment:s;position:relative;padding:0 0 20px 44px;color:var(--dim);font-size:15px}
+  ol.steps li:last-child{padding-bottom:0}
+  ol.steps li::before{content:counter(s);position:absolute;left:0;top:2px;width:26px;height:26px;border-radius:50%;
+    border:1px solid var(--line);background:var(--panel-2);display:flex;align-items:center;justify-content:center;
+    font:600 12px/1 var(--mono);color:var(--accent)}
+  ol.steps b{color:var(--text);font-weight:600}
+  ul.plain{margin:0;padding:0;list-style:none}
+  ul.plain li{padding:9px 0;border-bottom:1px dashed var(--line);color:var(--dim);font-size:15px}
+  ul.plain li:last-child{border-bottom:0}
+  ul.plain b{color:var(--text);font-weight:600}
+  .qa{margin:0 0 14px}
+  .qa dt{color:var(--text);font-weight:600;font-size:15px;padding:10px 0 4px}
+  .qa dd{margin:0;color:var(--dim);font-size:14.5px}
+  .note{background:linear-gradient(180deg, rgba(157,140,255,.07), transparent);
+    border:1px solid var(--line);border-left:3px solid var(--accent);
+    border-radius:8px;padding:16px 20px;font-size:14.5px;color:var(--dim)}
+  .note b{color:var(--text)}
+  .note p{margin:0 0 10px;font-size:14.5px}
+  .note p:last-child{margin:0}
+  footer{border-top:1px solid var(--line);padding:26px 0 46px;color:#6f788c;font-size:13.5px}
+  footer .row{display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between}
+  footer a{color:#8d96ab}
+  .pager{display:flex;justify-content:space-between;gap:12px;padding:28px 0 6px;font-size:14px}
+  [data-reveal]{opacity:0;transform:translateY(20px);
+    transition:opacity .55s ease,transform .55s cubic-bezier(.2,.7,.2,1)}
+  [data-reveal="left"]{transform:translateX(-24px)}
+  [data-reveal="zoom"]{transform:scale(.95)}
+  [data-reveal].in{opacity:1;transform:none}
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto}
+    [data-reveal]{opacity:1;transform:none;transition:none}
+    .card{transition:none}
+    #progress{display:none}
+  }
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<header>
+  <div class="wrap bar">
+    <a class="brand" href="index.html">
+      <svg width="22" height="22" viewBox="0 0 32 32" aria-hidden="true">
+        <circle cx="16" cy="16" r="15" fill="#141824" stroke="#2b3346"/>
+        <path d="M20.5 7a10 10 0 1 0 4.8 12.4A8 8 0 0 1 20.5 7z" fill="#cfc6ff"/>
+      </svg>
+      FrishLuna
+    </a>
+    <nav><a href="index.html">首页</a><a href="docs/quickstart.html">跑起来</a><a href="docs/onebot.html">OneBot</a><a href="docs/config.html">配置</a><a href="docs/faq.html">问题</a></nav>
+  </div>
+</header>
+<section>
+  <div class="wrap">
+    <div class="kicker"data-reveal><i></i>01 · 三种接法</div>
+    <h2data-reveal data-delay="60">怎么连</h2>
+    <p class="lead"data-reveal data-delay="120">协议端在 <code>app/server/onebot-server.js</code>，默认端口 5760。</p>
+    <table data-reveal>
+<tr><th>方式</th><th>地址</th><th>适合</th></tr>
+<tr><td>HTTP API</td><td><code>POST http://127.0.0.1:5760</code></td><td>脚本、单次调用、不想保持连接</td></tr>
+<tr><td>正向 WS</td><td><code>ws://127.0.0.1:5760</code></td><td>本机机器人框架主动连进来</td></tr>
+<tr><td>反向 WS</td><td>本端连到你的框架地址</td><td>AstrBot 一类支持 aiocqhttp 的框架</td></tr>
+</table>
+<p data-reveal data-delay="120">令牌在「面板设置 → 协议端令牌」配置；HTTP 和正向 WS 走 <code>Authorization: Bearer</code> 头，反向 WS 也可以直接把令牌写进 URL 的 <code>access_token=</code> 参数。</p>
+  </div>
+</section><section>
+  <div class="wrap">
+    <div class="kicker"data-reveal><i></i>02 · 调用</div>
+    <h2data-reveal data-delay="60">发一个 action</h2>
+    <p class="lead"data-reveal data-delay="120">和 OneBot v11 规范一致：<code>{action, params, echo}</code>。</p>
+    <pre data-reveal><code>curl -s http://127.0.0.1:5760 \
+  -H "Authorization: Bearer 你的协议端令牌" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "action": "send_group_msg",
+    "params": { "group_id": 123456, "message": "hello" },
+    "echo": "t1"
+  }'</code></pre>
+<p data-reveal data-delay="120">回包按 echo 配对：<code>{ status, retcode, data, echo }</code>。</p>
+  </div>
+</section><section>
+  <div class="wrap">
+    <div class="kicker"data-reveal><i></i>03 · 能力</div>
+    <h2data-reveal data-delay="60">常用 action</h2>
+    <p class="lead"data-reveal data-delay="120">完整的 action ↔ 内部调用对应关系以面板实验台为准——实验台里的每一项就是一个 action。</p>
+    <ul class="plain">
+<li data-reveal><b>消息：</b><code>send_private_msg</code> / <code>send_group_msg</code> / <code>delete_msg</code> / <code>get_msg</code> / <code>get_msg_list</code></li>
+<li data-reveal data-delay="70"><b>账号：</b><code>get_login_info</code> / <code>get_status</code></li>
+<li data-reveal data-delay="140"><b>群管理：</b><code>set_group_ban</code> / <code>set_group_whole_ban</code> / <code>set_group_kick</code> / <code>set_group_admin</code> / <code>set_group_card</code> / <code>set_group_name</code> / <code>send_group_notice</code></li>
+<li data-reveal data-delay="210"><b>查询：</b><code>get_group_list</code> / <code>get_group_member_list</code> / <code>get_friend_list</code></li>
+<li data-reveal data-delay="280"><b>媒体：</b><code>get_image</code> / <code>get_record</code> / <code>get_file</code> / <code>upload_group_file</code> / <code>send_video</code></li>
+<li data-reveal data-delay="350"><b>互动：</b>戳一戳、表情回应、名片赞等，实验台「互动」页签里的每一项都可直接调用。</li>
+</ul>
+  </div>
+</section><section>
+  <div class="wrap">
+    <div class="kicker"data-reveal><i></i>04 · 事件</div>
+    <h2data-reveal data-delay="60">收方向</h2>
+    <p class="lead"data-reveal data-delay="120">HTTP 只做调用；收到消息这类事件走 WS 推。</p>
+    <ul class="plain">
+<li data-reveal><b>事件实时推。</b>群聊、私聊消息经内置协议端推给已连接的 WS 订阅方，格式按 OneBot v11 事件规范。</li>
+<li data-reveal data-delay="70"><b>本号自己发的消息没有回显。</b>QQ 只推它收到的消息，所以外部框架不会响应当前账号自己发的内容——这是客户端行为，不是 bug。</li>
+<li data-reveal data-delay="140"><b>self_id 的来路。</b>OneBot 事件里的 <code>self_id</code> 要等本号发过一条消息后才能从消息记录里学出来；学到前后反向 WS 会重连换请求头，面板重启后一般半分钟内恢复。</li>
+</ul>
+  </div>
+</section><section>
+  <div class="wrap">
+    <div class="kicker"data-reveal><i></i>05 · 反向 WS</div>
+    <h2data-reveal data-delay="60">接 AstrBot</h2>
+    <p class="lead"data-reveal data-delay="120">反向 WS 是手写的 RFC6455 客户端（Node 全局 WebSocket 加不了自定义头）。</p>
+    <ul class="plain">
+<li data-reveal><b>握手头。</b>按 aiocqhttp 的校验要求带 <code>Authorization: Bearer</code>、<code>X-Self-ID</code>、<code>X-Client-Role: Universal</code> 三个头。</li>
+<li data-reveal data-delay="70"><b>配置。</b>面板设置 → 反向 WS 地址，填你框架的 ws 地址（令牌可并入 <code>access_token=</code>）。</li>
+<li data-reveal data-delay="140"><b>验证。</b><code>get_login_info</code> / <code>get_status</code> 按规范应答；连上后事件实时流入框架。</li>
+</ul>
+  </div>
+</section>
+<footer>
+  <div class="wrap row">
+    <div>© 2026 FrishLuna · 代码以 <a href="https://github.com/FrishLuna/FrishLuna/blob/main/LICENSE">MIT</a> 许可发布</div>
+    <div><a href="https://github.com/FrishLuna">GitHub</a> · <a href="https://github.com/FrishLuna/FrishLuna/issues">问题反馈</a></div>
+  </div>
+</footer>
+<script>
+(function(){
+  var rm = matchMedia('(prefers-reduced-motion: reduce)').matches
+  var io = new IntersectionObserver(function(es){
+    es.forEach(function(e){
+      if (e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target) }
+    })
+  }, { threshold: .12 })
+  document.querySelectorAll('[data-reveal]').forEach(function(el){
+    if (rm){ el.classList.add('in'); return }
+    var d = el.getAttribute('data-delay')
+    if (d) el.style.transitionDelay = d + 'ms'
+    io.observe(el)
+  })
+  var bar = document.getElementById('progress')
+  var ticking = false
+  function frame(){
+    ticking = false
+    var h = document.documentElement
+    var max = h.scrollHeight - h.clientHeight
+    bar.style.transform = 'scaleX(' + (max > 0 ? h.scrollTop / max : 0) + ')'
+  }
+  addEventListener('scroll', function(){
+    if (ticking) return
+    ticking = true
+    requestAnimationFrame(frame)
+  }, { passive: true })
+  frame()
+})()
+</script>
+</body>
+</html>
